@@ -3,14 +3,15 @@ import glob
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 
 def read_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--input_dir", "-i", nargs="+", type=str, help="images directory name"
+        "--input_dir", "-id", nargs="+", type=str, help="images directory name"
     )
-    parser.add_argument("--save_name", "-o", type=str, help="output file name")
+    parser.add_argument("--output", "-o", type=str, help="output file name")
     parser.add_argument(
         "--resize",
         "-r",
@@ -24,7 +25,7 @@ def read_args():
 
 def make_datasets(args):
     input_dir_names = args.input_dir
-    save_file_name = args.save_name
+    save_file_name = args.output
     img_size = (args.resize, args.resize)
 
     preprocess_imgs(
@@ -39,16 +40,22 @@ def preprocess_imgs(
     save_file_name,
     img_size,
 ):
-
     imgs = [
         cv2.imread(file_path)[:, :, ::-1]
         for dir_name in input_dir_names
-        for file_path in glob.iglob(f"../raw/{dir_name}/*")
+        for file_path in glob.iglob(f"data/{dir_name}/*")
     ]
 
-    dataset = np.array([cv2.resize(img, img_size) for img in imgs])
+    dataset = np.array(
+        [
+            cv2.resize(img, img_size)
+            for img in tqdm(
+                imgs,
+            )
+        ]
+    )
 
-    save_file = f"../datasets/{save_file_name}.npz"
+    save_file = f"datasets/{save_file_name}.npz"
     np.savez(save_file, img=dataset)
     print("datasets image size:", dataset.shape)
     print("save directory", save_file)

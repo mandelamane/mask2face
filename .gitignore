@@ -1,6 +1,7 @@
 .mypy_cache
 __pycache__
-/raw
-/models
-/datasets
 .DS_Store
+.ipynb_checkpoints
+data/face
+data/mask
+datasets

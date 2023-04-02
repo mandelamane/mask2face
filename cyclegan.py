@@ -13,7 +13,6 @@ def downsample(
     padding="same",
     use_bias=False,
 ):
-
     x = tf.keras.layers.Conv2D(
         filters,
         kernel_size,
@@ -42,7 +41,6 @@ def upsample(
     padding="same",
     use_bias=False,
 ):
-
     x = tf.keras.layers.Conv2DTranspose(
         filters,
         kernel_size,
@@ -70,7 +68,6 @@ def residual_block(
     padding="valid",
     use_bias=False,
 ):
-
     xdim = x.shape[-1]
     input_tensor = x
 
@@ -158,7 +155,9 @@ class CycleGan(tf.keras.models.Model):
         return gen_loss
 
     def calc_dis_loss(self, dis_real, dis_fake):
-        real_loss = tf.keras.losses.BinaryCrossentropy()(tf.ones_like(dis_real), dis_real)
+        real_loss = tf.keras.losses.BinaryCrossentropy()(
+            tf.ones_like(dis_real), dis_real
+        )
         fake_loss = tf.keras.losses.BinaryCrossentropy()(
             tf.zeros_like(dis_fake), dis_fake
         )
@@ -166,15 +165,10 @@ class CycleGan(tf.keras.models.Model):
 
     def compile(self):
         super(CycleGan, self).compile()
-        self.gen_m.get_weights("face2mask_41.h5")
         self.gen_m = self.gen_m.model
-        self.gen_f.get_weights("mask2face_41.h5")
         self.gen_f = self.gen_f.model
-        self.dis_m.get_weights("dis_mask_41.h5")
         self.dis_m = self.dis_m.model
-        self.dis_f.get_weights("dis_face_41.h5")
         self.dis_f = self.dis_f.model
-
 
     @tf.function
     def train_step(self, batch_data):
@@ -200,10 +194,12 @@ class CycleGan(tf.keras.models.Model):
             gen_f_loss = self.calc_gen_loss(dis_fake_face)
 
             cycle_loss_m = (
-                self.cycle_loss_obj(real_mask, cycled_m2f2m) * self.lambda_cycle
+                self.cycle_loss_obj(real_mask, cycled_m2f2m)
+                * self.lambda_cycle
             )
             cycle_loss_f = (
-                self.cycle_loss_obj(real_face, cycled_f2m2f) * self.lambda_cycle
+                self.cycle_loss_obj(real_face, cycled_f2m2f)
+                * self.lambda_cycle
             )
 
             id_loss_m = (
@@ -230,9 +226,13 @@ class CycleGan(tf.keras.models.Model):
         dis_f_grads = tape.gradient(dis_f_loss, self.dis_f.trainable_variables)
         dis_m_grads = tape.gradient(dis_m_loss, self.dis_m.trainable_variables)
 
-        self.gen_m_optim.apply_gradients(zip(grads_m, self.gen_m.trainable_variables))
+        self.gen_m_optim.apply_gradients(
+            zip(grads_m, self.gen_m.trainable_variables)
+        )
 
-        self.gen_f_optim.apply_gradients(zip(grads_f, self.gen_f.trainable_variables))
+        self.gen_f_optim.apply_gradients(
+            zip(grads_f, self.gen_f.trainable_variables)
+        )
 
         self.dis_f_optim.apply_gradients(
             zip(dis_f_grads, self.dis_f.trainable_variables)
@@ -264,7 +264,6 @@ class Generator:
         num_upsample_blocks=2,
         name=None,
     ):
-
         inputs = tf.keras.layers.Input(shape=img_size, name=name + "_input")
 
         x = ReflectionPadding2D(padding=(3, 3))(inputs)
@@ -310,7 +309,7 @@ class Generator:
         self.model.summary()
 
     def get_weights(self, file_name):
-        self.model.load_weights(f"../models/{file_name}")
+        self.model.load_weights(f"model/{file_name}")
 
 
 class Discriminator:
@@ -322,7 +321,9 @@ class Discriminator:
         filters=64,
         name=None,
     ):
-        inputs = tf.keras.layers.Input(shape=img_size, name=name + "_img_input")
+        inputs = tf.keras.layers.Input(
+            shape=img_size, name=name + "_img_input"
+        )
 
         x = tf.keras.layers.Conv2D(
             filters,
@@ -358,7 +359,11 @@ class Discriminator:
                 )
 
         x = tf.keras.layers.Conv2D(
-            1, (4, 4), strides=(1, 1), padding="same", kernel_initializer=kernel_init
+            1,
+            (4, 4),
+            strides=(1, 1),
+            padding="same",
+            kernel_initializer=kernel_init,
         )(x)
 
         self.model = tf.keras.models.Model(inputs=inputs, outputs=x, name=name)
