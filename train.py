@@ -74,10 +74,10 @@ def train_cyclegan(args):
     )
     img_size = f_train.shape[1:]
 
-    gen_optim = tf.keras.optimizers.Adam(
+    gen_optim = tf.keras.optimizers.legacy.Adam(
         learning_rate=args.learning_rate, beta_1=0.5
     )
-    dis_optim = tf.keras.optimizers.Adam(
+    dis_optim = tf.keras.optimizers.legacy.Adam(
         learning_rate=args.learning_rate, beta_1=0.5
     )
     cycle_gan = CycleGan(

@@ -1,6 +1,3 @@
-import datetime
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -12,12 +9,6 @@ class GANMonitor(tf.keras.callbacks.Callback):
         self.m_imgs = m_imgs
         self.f_imgs = f_imgs
         self.sum_num = self.m_imgs.shape[0] - self.num_img
-        self.time_now = datetime.datetime.now()
-
-        self.model_dir = f"model/{self.time_now}"
-        self.fig_dir = f"result/{self.time_now}"
-        os.mkdir(self.model_dir)
-        os.mkdir(self.fig_dir)
 
     def on_epoch_end(self, epoch, logs=None):
         init_index = epoch % self.sum_num
@@ -41,10 +32,10 @@ class GANMonitor(tf.keras.callbacks.Callback):
             prediction2 = self.model.gen_m(m_img[np.newaxis, :, :, :])[
                 0
             ].numpy()
-            gen_f_img = (prediction * 127.5 + 127.5).astype(np.uint8)
-            gen_m_img = (prediction2 * 127.5 + 127.5).astype(np.uint8)
-            true_img = (f_img * 127.5 + 127.5).astype(np.uint8)
-            input_img = (m_img * 127.5 + 127.5).astype(np.uint8)
+            gen_f_img = (prediction * 255.0).astype(np.uint8)
+            gen_m_img = (prediction2 * 255.0).astype(np.uint8)
+            true_img = (f_img * 255.0).astype(np.uint8)
+            input_img = (m_img * 255.0).astype(np.uint8)
 
             ax[i, 0].imshow(input_img)
             ax[i, 1].imshow(gen_f_img)

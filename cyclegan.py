@@ -1,5 +1,7 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.keras.losses import mean_squared_error
+from tensorflow.keras.utils import CustomObjectScope
 
 
 def downsample(
@@ -145,7 +147,7 @@ class CycleGan(tf.keras.models.Model):
         self.gen_f_optim = gen_optim
         self.dis_m_optim = dis_optim
         self.dis_f_optim = dis_optim
-        self.cycle_loss_obj = tf.keras.losses.MeanAbsoluteError()
+        self.cycle_loss_obj = CycleGan.ssim_l1_loss
         self.id_loss_obj = tf.keras.losses.MeanAbsoluteError()
 
     def calc_gen_loss(self, dis_fake):
@@ -251,6 +253,20 @@ class CycleGan(tf.keras.models.Model):
             "D_m": dis_m_loss,
         }
 
+    @staticmethod
+    @tf.function
+    def ssim_l1_loss(gt, y_pred, max_val=1.0, l1_weight=1.0):
+        ssim_loss = 1 - tf.reduce_mean(
+            tf.image.ssim(gt, y_pred, max_val=max_val)
+        )
+        l1 = mean_squared_error(gt, y_pred)
+        return ssim_loss + tf.cast(l1 * l1_weight, tf.float32)
+
+    @staticmethod
+    @tf.function
+    def ssim_loss(gt, y_pred, max_val=1.0):
+        return 1 - tf.reduce_mean(tf.image.ssim(gt, y_pred, max_val=max_val))
+
 
 class Generator:
     def __init__(
@@ -303,13 +319,19 @@ class Generator:
 
         x = ReflectionPadding2D(padding=(3, 3))(x)
         x = tf.keras.layers.Conv2D(3, (7, 7), padding="valid")(x)
-        x = tf.keras.layers.Activation("tanh")(x)
+        x = tf.keras.layers.Activation("sigmoid")(x)
 
         self.model = tf.keras.models.Model(inputs, x, name=name)
         self.model.summary()
 
     def get_weights(self, file_name):
-        self.model.load_weights(f"model/{file_name}")
+        with CustomObjectScope(
+            {
+                "ssim_loss": CycleGan.ssim_loss,
+                "ssim_l1_loss": CycleGan.ssim_l1_loss,
+            }
+        ):
+            self.model.load_weights(f"model/{file_name}")
 
 
 class Discriminator:
@@ -370,7 +392,13 @@ class Discriminator:
         self.model.summary()
 
     def get_weights(self, file_name):
-        self.model.load_weights(f"../models/{file_name}")
+        with CustomObjectScope(
+            {
+                "ssim_loss": CycleGan.ssim_loss,
+                "ssim_l1_loss": CycleGan.ssim_l1_loss,
+            }
+        ):
+            self.model.load_weights(f"model/{file_name}")
 
 
 class ReflectionPadding2D(tf.keras.layers.Layer):
