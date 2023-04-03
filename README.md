@@ -6,7 +6,7 @@
 ## Usage
 1. install python=3.9
 
-2. `pip install -r requirements.txt`
+2. `pip install -r requirements.txt`　(ただし，M1 Pro mac対応)
 
 3. `mkdir data`
 4. `mkdir datasets`
