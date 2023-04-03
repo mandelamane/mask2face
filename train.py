@@ -46,8 +46,8 @@ def load_data(file_names, test_data_rate):
         datasets.append(images)
 
     face, mask = datasets[0], datasets[1]
-    face = (face.astype(np.float32) / 127.5) - 1.0
-    mask = (mask.astype(np.float32) / 127.5) - 1.0
+    face = face.astype(np.float32) / 255.0
+    mask = mask.astype(np.float32) / 255.0
 
     train_num = int(face.shape[0] * (1 - test_data_rate))
     f_train, f_test = face[:train_num], face[train_num:]

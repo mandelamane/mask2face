@@ -4,4 +4,5 @@ __pycache__
 .ipynb_checkpoints
 data/face
 data/mask
-datasets
+datasets/face.npz
+datasets/mask.npz

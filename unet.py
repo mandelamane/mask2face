@@ -1,77 +1,121 @@
 import tensorflow as tf
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import (
+    Activation,
+    Add,
+    BatchNormalization,
+    Concatenate,
     Conv2D,
     Conv2DTranspose,
-    MaxPooling2D,
-    concatenate,
+    DepthwiseConv2D,
 )
 from tensorflow.keras.losses import mean_squared_error
 
 
+def FReLU(inputs, kernel_size=3):
+    x = DepthwiseConv2D(
+        kernel_size, strides=(1, 1), padding="same", use_bias=False
+    )(inputs)
+    x = BatchNormalization()(x)
+    x = tf.maximum(inputs, x)
+    return x
+
+
+def Mish(inputs):
+    return inputs * tf.math.tanh(tf.math.softplus(inputs))
+
+
 class UNet:
     def __init__(self, input_size):
+        # エンコーダー側のフィルター数とカーネルサイズを定義
+        filters = (64, 128, 128, 256, 256, 512)
+        kernels = (7, 7, 7, 4, 3, 2)
+
         inputs = Input(input_size)
 
-        conv1 = Conv2D(32, (3, 3), activation="relu", padding="same")(inputs)
-        pool1 = MaxPooling2D((2, 2))(conv1)
+        # エンコーダー側の畳み込み層の出力を保持するリスト
+        conv_outputs = []
+        first_layer = Conv2D(filters[0], kernels[0], padding="same")(inputs)
+        int_layer = first_layer
 
-        conv2 = Conv2D(64, (3, 3), activation="relu", padding="same")(pool1)
-        pool2 = MaxPooling2D((2, 2))(conv2)
+        for i, fil in enumerate(filters):
+            int_layer, skip = UNet.down_block(int_layer, fil, kernels[i])
+            conv_outputs.append(skip)
 
-        conv3 = Conv2D(128, (3, 3), activation="relu", padding="same")(pool2)
-        pool3 = MaxPooling2D((2, 2))(conv3)
+        int_layer = UNet.bottleneck(int_layer, filters[-1], kernels[-1])
 
-        conv4 = Conv2D(256, (3, 3), activation="relu", padding="same")(pool3)
-        pool4 = MaxPooling2D((2, 2))(conv4)
+        conv_outputs = list(reversed(conv_outputs))
+        reversed_filters = list(reversed(filters))
+        reversed_kernels = list(reversed(kernels))
 
-        conv5 = Conv2D(512, (3, 3), activation="relu", padding="same")(pool4)
-        pool5 = MaxPooling2D((2, 2))(conv5)
+        for i, fil in enumerate(reversed_filters):
+            if i + 1 < len(reversed_filters):
+                num_filter_next = reversed_filters[i + 1]
+                num_kernel_next = reversed_kernels[i + 1]
+            else:
+                num_filter_next = fil
+                num_kernel_next = reversed_kernels[i]
 
-        conv6 = Conv2D(1024, (3, 3), activation="relu", padding="same")(pool5)
-        pool6 = MaxPooling2D((2, 2))(conv6)
+            int_layer = UNet.up_block(
+                int_layer,
+                conv_outputs[i],
+                fil,
+                num_filter_next,
+                num_kernel_next,
+            )
 
-        mid = Conv2D(1024, (3, 3), activation="relu", padding="same")(pool6)
-
-        up_conv1 = Conv2DTranspose(
-            1024, (2, 2), strides=(2, 2), padding="same"
-        )(mid)
-        cat1 = concatenate([up_conv1, conv6])
-        conv7 = Conv2D(512, (3, 3), activation="relu", padding="same")(cat1)
-
-        up_conv2 = Conv2DTranspose(
-            512, (2, 2), strides=(2, 2), padding="same"
-        )(conv7)
-        cat2 = concatenate([up_conv2, conv5])
-        conv8 = Conv2D(256, (3, 3), activation="relu", padding="same")(cat2)
-
-        up_conv3 = Conv2DTranspose(
-            256, (2, 2), strides=(2, 2), padding="same"
-        )(conv8)
-        cat3 = concatenate([up_conv3, conv4])
-        conv9 = Conv2D(256, (3, 3), activation="relu", padding="same")(cat3)
-
-        up_conv4 = Conv2DTranspose(
-            128, (2, 2), strides=(2, 2), padding="same"
-        )(conv9)
-        cat4 = concatenate([up_conv4, conv3])
-        conv10 = Conv2D(128, (3, 3), activation="relu", padding="same")(cat4)
-
-        up_conv5 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding="same")(
-            conv10
+        int_layer = Concatenate()([first_layer, int_layer])
+        int_layer = Conv2D(filters[0], kernels[0], padding="same")(int_layer)
+        int_layer = UNet.activation(int_layer, "Mish")
+        outputs = Conv2D(3, (1, 1), padding="same", activation="sigmoid")(
+            int_layer
         )
-        cat5 = concatenate([up_conv5, conv2])
-        conv11 = Conv2D(64, (3, 3), activation="relu", padding="same")(cat5)
-
-        up_conv6 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding="same")(
-            conv11
-        )
-        cat6 = concatenate([up_conv6, conv1])
-        conv12 = Conv2D(32, (3, 3), activation="relu", padding="same")(cat6)
-
-        outputs = Conv2D(3, (1, 1), activation="sigmoid")(conv12)
-
         self.model = Model(inputs=[inputs], outputs=[outputs])
+
+    @staticmethod
+    def down_block(x, num_filter, kernel):
+        x = Conv2D(num_filter, kernel, padding="same", strides=2)(x)
+        out = Conv2D(num_filter, kernel, padding="same")(x)
+        out = UNet.activation(out, "Mish")
+        out = Conv2D(num_filter, kernel, padding="same")(out)
+
+        out = Add()([out, x])
+        return UNet.activation(out, "Mish"), x
+
+    @staticmethod
+    def bottleneck(x, num_filter, kernel):
+        x = Conv2D(num_filter, kernel, padding="same")(x)
+        return UNet.activation(x, "Mish")
+
+    @staticmethod
+    def up_block(x, skip, num_filter, num_filter_next, kernel):
+        concat = Concatenate()([x, skip])
+
+        out = Conv2D(num_filter, kernel, padding="same")(concat)
+        out = UNet.activation(out, "Mish")
+        out = Conv2D(num_filter, kernel, padding="same")(out)
+
+        out = Add()([out, x])
+        out = UNet.activation(out, "Mish")
+
+        concat = Concatenate()([out, skip])
+
+        out = Conv2DTranspose(
+            num_filter_next, kernel, padding="same", strides=2
+        )(concat)
+        out = Conv2D(num_filter_next, kernel, padding="same")(out)
+        return UNet.activation(out, "Mish")
+
+    @staticmethod
+    def activation(x, func):
+        if func == "relu":
+            x = Activation("relu")(x)
+        elif func == "mish":
+            x = Mish(x)
+        elif func == "frelu":
+            x = FReLU(x)
+
+        return x
 
     def get_model(self, file_path):
         self.model = tf.keras.models.load_model(file_path)
