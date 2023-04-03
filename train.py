@@ -2,6 +2,7 @@ import argparse
 import os
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 from cyclegan import CycleGan
@@ -90,13 +91,15 @@ def train_cyclegan(args):
     cycle_gan.compile()
     plotter = GANMonitor(m_test, f_test)
 
-    cycle_gan.fit(
+    history = cycle_gan.fit(
         f_train,
         m_train,
         batch_size=args.batch_size,
         epochs=args.epochs,
         callbacks=[plotter],
     )
+
+    return history
 
 
 def train_unet(args):
@@ -121,13 +124,15 @@ def train_unet(args):
         filepath=checkpoint_filepath, use_multiprocessing=True
     )
 
-    unet.fit(
+    history = unet.fit(
         m_train,
         f_train,
         epochs=args.epochs,
         batch_size=args.batch_size,
         callbacks=[plotter, model_checkpoint_callback],
     )
+
+    return history
 
 
 def main(args):
@@ -144,11 +149,15 @@ def main(args):
         print("Not enough GPU hardware devices available")
 
     if args.model == "cyclegan":
-        train_cyclegan(args)
+        history = train_cyclegan(args)
     elif args.model == "unet":
-        train_unet(args)
+        history = train_unet(args)
     else:
         print("--model is either cyclegan or unet")
+        exit()
+
+    hist_df = pd.DataFrame(history.history)
+    hist_df.to_csv("history.csv")
 
 
 if __name__ == "__main__":
