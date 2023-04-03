@@ -22,10 +22,10 @@ def read_args():
         help="model architecture [cyclegan, unet]",
     )
     parser.add_argument(
-        "--batch_size", "-b", default=32, type=int, help="batch size"
+        "--batch_size", "-b", default=12, type=int, help="batch size"
     )
     parser.add_argument(
-        "--epochs", "-e", default=1000, type=int, help="train epochs"
+        "--epochs", "-e", default=20, type=int, help="train epochs"
     )
     parser.add_argument(
         "--learning_rate", "-lr", default=1e-4, type=int, help="learning rate"
