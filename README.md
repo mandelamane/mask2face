@@ -16,9 +16,9 @@
 
 6. `python train.py -fd [face datasets basename] -md [mask datasets basename] -m [model architecher] -b [batch size] -e [number of epoch] -lr [learning rate]`
 
-    ただし，モデルの構造は，cycleganおよびUnetのモデルに対応している．
+    ただし，モデルの構造は，cycleganおよびUnetのみ対応している．
 
-7. resultにテストデータに対するモデルの適用結果, modelにが苦渋済みモデルが保存される．
+7. resultにテストデータに対するモデルの適用結果, modelにが学習済みモデルが保存される．
 
 
 ### 参考
