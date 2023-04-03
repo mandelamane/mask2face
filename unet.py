@@ -10,6 +10,7 @@ from tensorflow.keras.layers import (
     DepthwiseConv2D,
 )
 from tensorflow.keras.losses import mean_squared_error
+from tensorflow.keras.utils import CustomObjectScope
 
 
 def FReLU(inputs, kernel_size=3):
@@ -118,7 +119,10 @@ class UNet:
         return x
 
     def get_model(self, file_path):
-        self.model = tf.keras.models.load_model(file_path)
+        with CustomObjectScope(
+            {"ssim_loss": UNet.ssim_loss, "ssim_l1_loss": UNet.ssim_l1_loss}
+        ):
+            self.model = tf.keras.models.load_model(file_path)
 
     def predict(self, x):
         return self.model.predict(x)

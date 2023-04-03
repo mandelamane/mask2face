@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -20,6 +21,13 @@ def read_args():
         default="unet",
         type=str,
         help="model architecture [cyclegan, unet]",
+    )
+    parser.add_argument(
+        "--pre_trained",
+        "-p",
+        default="none",
+        type=str,
+        help="pretrained model path",
     )
     parser.add_argument(
         "--batch_size", "-b", default=12, type=int, help="batch size"
@@ -99,8 +107,13 @@ def train_unet(args):
     img_size = f_train.shape[1:]
 
     unet = UNet(img_size)
+
+    if args.pre_trained != "none":
+        unet.get_model(os.path.join("model", f"{args.pre_trained}.h5"))
+
     unet.compile(args.learning_rate)
     unet.summary()
+    unet.save_summary(os.path.join("model", "unet_arch.png"))
 
     plotter = UNetMonitor(m_test, f_test)
     checkpoint_filepath = "model/unet_{epoch}.h5"
@@ -118,6 +131,18 @@ def train_unet(args):
 
 
 def main(args):
+    physical_devices = tf.config.list_physical_devices("GPU")
+    if len(physical_devices) > 0:
+        for device in physical_devices:
+            tf.config.experimental.set_memory_growth(device, True)
+            print(
+                "{} memory growth: {}".format(
+                    device, tf.config.experimental.get_memory_growth(device)
+                )
+            )
+    else:
+        print("Not enough GPU hardware devices available")
+
     if args.model == "cyclegan":
         train_cyclegan(args)
     elif args.model == "unet":
