@@ -13,7 +13,7 @@
 
 5. [AddMask](https://github.com/mandelamane/AddMask.git)より画像データを作成し，dataにディレクトリを移動させる．このとき，ディレクトリ名はfaceおよびmaskにするとよい．
 
-6. `python datasets.py -id [images directory] -o [output file basename] -r [size to resize image]`
+6. `python datasets.py -id [images directory names] -o [output file basename] -r [size to resize image]`
 
 7. `python train.py -fd [face datasets basename] -md [mask datasets basename] -m [model architecher] -b [batch size] -e [number of epoch] -lr [learning rate]`
 
