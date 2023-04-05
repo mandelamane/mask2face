@@ -3,16 +3,29 @@ import numpy as np
 import tensorflow as tf
 
 
+def save_images(ax, mask_img, gen_face_img, face_img, gen_mask_img=None):
+    ax[0].imshow(mask_img)
+    ax[1].imshow(gen_face_img)
+    ax[2].imshow(face_img)
+    ax[0].set_title("Mask image")
+    ax[1].set_title("Generated Face image")
+    ax[2].set_title("Face image")
+    ax[0].axis("off")
+    ax[1].axis("off")
+    ax[2].axis("off")
+
+    if gen_mask_img is not None:
+        ax[3].imshow(gen_mask_img)
+        ax[3].set_title("Generated Mask image")
+        ax[3].axis("off")
+
+
 class GANMonitor(tf.keras.callbacks.Callback):
-    def __init__(self, m_imgs, f_imgs, num_img=4):
-        self.num_img = num_img
-        self.m_imgs = m_imgs
-        self.f_imgs = f_imgs
-        self.sum_num = self.m_imgs.shape[0] - self.num_img
+    def __init__(self, test_data_generator, n_examples=4):
+        self.n_examples = n_examples
+        self.test_data_generator = test_data_generator
 
     def on_epoch_end(self, epoch, logs=None):
-        init_index = epoch % self.sum_num
-
         self.model.gen_f.save(f"model/mask2face_{epoch+1}.h5")
         self.model.gen_m.save(f"model/face2mask_{epoch+1}.h5")
         self.model.dis_f.save(f"model/dis_face_{epoch+1}.h5")
@@ -20,35 +33,21 @@ class GANMonitor(tf.keras.callbacks.Callback):
 
         _, ax = plt.subplots(self.num_img, 4, figsize=(12, 12))
 
-        for i, (f_img, m_img) in enumerate(
-            zip(
-                self.f_imgs[init_index : init_index + self.num_img],
-                self.m_imgs[init_index : init_index + self.num_img],
-            )
-        ):
-            prediction = self.model.gen_f(m_img[np.newaxis, :, :, :])[
-                0
-            ].numpy()
-            prediction2 = self.model.gen_m(m_img[np.newaxis, :, :, :])[
-                0
-            ].numpy()
-            gen_f_img = (prediction * 255.0).astype(np.uint8)
-            gen_m_img = (prediction2 * 255.0).astype(np.uint8)
-            true_img = (f_img * 255.0).astype(np.uint8)
-            input_img = (m_img * 255.0).astype(np.uint8)
+        for i in range(self.n_examples):
+            mask_img, face_img = self.test_data_generator[i]
 
-            ax[i, 0].imshow(input_img)
-            ax[i, 1].imshow(gen_f_img)
-            ax[i, 2].imshow(gen_m_img)
-            ax[i, 3].imshow(true_img)
-            ax[i, 0].set_title("Mask image")
-            ax[i, 1].set_title("Mask2Face image")
-            ax[i, 2].set_title("Mask2Mask image")
-            ax[i, 3].set_title("Face image")
-            ax[i, 0].axis("off")
-            ax[i, 1].axis("off")
-            ax[i, 2].axis("off")
-            ax[i, 3].axis("off")
+            prediction = self.model.gen_f(mask_img[np.newaxis, :, :, :])[
+                0
+            ].numpy()
+            prediction2 = self.model.gen_m(face_img[np.newaxis, :, :, :])[
+                0
+            ].numpy()
+            gen_face_img = (prediction * 255.0).astype(np.uint8)
+            gen_mask_img = (prediction2 * 255.0).astype(np.uint8)
+            face_img = (face_img * 255.0).astype(np.uint8)
+            mask_img = (mask_img * 255.0).astype(np.uint8)
+
+            save_images(ax[i], mask_img, gen_face_img, face_img, gen_mask_img)
 
         plt.savefig(f"result/cyclegan_{epoch+1}.png")
         plt.close()
@@ -57,39 +56,24 @@ class GANMonitor(tf.keras.callbacks.Callback):
 class UNetMonitor(tf.keras.callbacks.Callback):
     """A callback to generate and save images after each epoch"""
 
-    def __init__(self, mask_test, face_test, n_examples=4):
+    def __init__(self, test_data_generator, n_examples=4):
         self.n_examples = n_examples
-        self.mask_test = mask_test
-        self.face_test = face_test
-        self.n_all = int(mask_test.shape[0] - n_examples)
+        self.test_data_generator = test_data_generator
 
     def on_epoch_end(self, epoch, log=None):
         _, ax = plt.subplots(self.n_examples, 3, figsize=(7, 10))
 
-        start = epoch % self.n_all
+        for i in range(self.n_examples):
+            mask_img, face_img = self.test_data_generator[i]
 
-        for i, (mask_img, face_img) in enumerate(
-            zip(self.mask_test[start:], self.face_test[start:])
-        ):
-            if i == self.n_examples:
-                break
-            else:
-                mask_img = mask_img[np.newaxis, :, :, :]
-                output_img = (
-                    (self.model(mask_img)[0] * 255.0).numpy().astype("uint8")
-                )
-                input_img = (mask_img[0] * 255.0).astype("uint8")
-                collect_img = (face_img * 255.0).astype("uint8")
+            mask_img = mask_img[np.newaxis, :, :, :]
+            gen_face_img = (
+                (self.model(mask_img)[0] * 255.0).numpy().astype("uint8")
+            )
+            mask_img = (mask_img[0] * 255.0).astype("uint8")
+            face_img = (face_img * 255.0).astype("uint8")
 
-                ax[i, 0].imshow(input_img)
-                ax[i, 1].imshow(output_img)
-                ax[i, 2].imshow(collect_img)
-                ax[i, 0].set_title("Input image")
-                ax[i, 1].set_title("Output image")
-                ax[i, 2].set_title("Collect image")
-                ax[i, 0].axis("off")
-                ax[i, 1].axis("off")
-                ax[i, 2].axis("off")
+            save_images(ax[i], mask_img, gen_face_img, face_img)
 
         plt.savefig(f"result/unet_{epoch+1}.png")
         plt.close()

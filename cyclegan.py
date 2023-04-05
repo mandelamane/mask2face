@@ -1,3 +1,5 @@
+import os
+
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.losses import mean_squared_error
@@ -253,6 +255,35 @@ class CycleGan(tf.keras.models.Model):
             "D_m": dis_m_loss,
         }
 
+    def summary(self):
+        self.gen_f.model.summary()
+        self.gen_m.model.summary()
+        self.dis_f.model.summary()
+        self.dis_m.model.summary()
+
+    def save_summary(self, output_dir):
+        print("save architecture figure")
+        tf.keras.utils.plot_model(
+            self.gen_f.model,
+            show_shapes=True,
+            to_file=os.path.join(output_dir, "gen_face.png"),
+        )
+        tf.keras.utils.plot_model(
+            self.gen_m.model,
+            show_shapes=True,
+            to_file=os.path.join(output_dir, "gen_mask.png"),
+        )
+        tf.keras.utils.plot_model(
+            self.dis_f.model,
+            show_shapes=True,
+            to_file=os.path.join(output_dir, "dis_face.png"),
+        )
+        tf.keras.utils.plot_model(
+            self.dis_m.model,
+            show_shapes=True,
+            to_file=os.path.join(output_dir, "dis_mask.png"),
+        )
+
     @staticmethod
     @tf.function
     def ssim_l1_loss(gt, y_pred, max_val=1.0, l1_weight=1.0):
@@ -322,7 +353,6 @@ class Generator:
         x = tf.keras.layers.Activation("sigmoid")(x)
 
         self.model = tf.keras.models.Model(inputs, x, name=name)
-        self.model.summary()
 
     def get_weights(self, file_name):
         with CustomObjectScope(
@@ -389,7 +419,6 @@ class Discriminator:
         )(x)
 
         self.model = tf.keras.models.Model(inputs=inputs, outputs=x, name=name)
-        self.model.summary()
 
     def get_weights(self, file_name):
         with CustomObjectScope(

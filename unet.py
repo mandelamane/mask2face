@@ -67,7 +67,7 @@ class UNet:
 
         int_layer = Concatenate()([first_layer, int_layer])
         int_layer = Conv2D(filters[0], kernels[0], padding="same")(int_layer)
-        int_layer = UNet.activation(int_layer, "Mish")
+        int_layer = UNet.activation(int_layer)
         outputs = Conv2D(3, (1, 1), padding="same", activation="sigmoid")(
             int_layer
         )
@@ -77,27 +77,27 @@ class UNet:
     def down_block(x, num_filter, kernel):
         x = Conv2D(num_filter, kernel, padding="same", strides=2)(x)
         out = Conv2D(num_filter, kernel, padding="same")(x)
-        out = UNet.activation(out, "Mish")
+        out = UNet.activation(out)
         out = Conv2D(num_filter, kernel, padding="same")(out)
 
         out = Add()([out, x])
-        return UNet.activation(out, "Mish"), x
+        return UNet.activation(out), x
 
     @staticmethod
     def bottleneck(x, num_filter, kernel):
         x = Conv2D(num_filter, kernel, padding="same")(x)
-        return UNet.activation(x, "Mish")
+        return UNet.activation(x)
 
     @staticmethod
     def up_block(x, skip, num_filter, num_filter_next, kernel):
         concat = Concatenate()([x, skip])
 
         out = Conv2D(num_filter, kernel, padding="same")(concat)
-        out = UNet.activation(out, "Mish")
+        out = UNet.activation(out)
         out = Conv2D(num_filter, kernel, padding="same")(out)
 
         out = Add()([out, x])
-        out = UNet.activation(out, "Mish")
+        out = UNet.activation(out)
 
         concat = Concatenate()([out, skip])
 
@@ -105,10 +105,10 @@ class UNet:
             num_filter_next, kernel, padding="same", strides=2
         )(concat)
         out = Conv2D(num_filter_next, kernel, padding="same")(out)
-        return UNet.activation(out, "Mish")
+        return UNet.activation(out)
 
     @staticmethod
-    def activation(x, func):
+    def activation(x, func="relu"):
         if func == "relu":
             x = Activation("relu")(x)
         elif func == "mish":
@@ -118,7 +118,7 @@ class UNet:
 
         return x
 
-    def get_model(self, file_path):
+    def load_model(self, file_path):
         with CustomObjectScope(
             {"ssim_loss": UNet.ssim_loss, "ssim_l1_loss": UNet.ssim_l1_loss}
         ):
@@ -143,13 +143,13 @@ class UNet:
             metrics=[UNet.ssim_l1_loss],
         )
 
-    def fit(self, x, y, epochs, batch_size, callbacks):
+    def fit(self, train_generator, val_generator, epochs, callbacks):
         self.model.fit(
-            x,
-            y,
-            validation_split=0.1,
+            train_generator,
+            steps_per_epoch=len(train_generator),
             epochs=epochs,
-            batch_size=batch_size,
+            validation_data=val_generator,
+            validation_steps=len(val_generator),
             callbacks=callbacks,
         )
 

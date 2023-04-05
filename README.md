@@ -9,17 +9,14 @@
 2. `pip install -r requirements.txt`　(ただし，M1 Pro mac対応)
 
 3. `mkdir data`
-4. `mkdir datasets`
 
-5. [AddMask](https://github.com/mandelamane/AddMask.git)より画像データを作成し，dataにディレクトリを移動させる．このとき，ディレクトリ名はfaceおよびmaskにするとよい．
+4. [AddMask](https://github.com/mandelamane/AddMask.git)より画像データを作成し，trainおよびtest内部のディレクトリをdataにディレクトリを移動させる．このとき，ディレクトリ名はfacexxおよびmaskxxにするとよい．
 
-6. `python datasets.py -id [images directory names] -o [output file basename] -r [size to resize image]`
-
-7. `python train.py -fd [face datasets basename] -md [mask datasets basename] -m [model architecher] -b [batch size] -e [number of epoch] -lr [learning rate]`
+5. `python train.py -tid [train mask dir] -ttd [train face dir] -vid [validation mask dir] -vtd [validation face dir] -is [image size (width and height)] -m [model architecher] -b [batch size] -e [number of epoch] -lr [learning rate]`
 
     ただし，モデルの構造は，cycleganおよびUnetのみ対応している．
 
-8. resultにテストデータに対するモデルの適用結果, modelにが学習済みモデルが保存される．
+6. resultにテストデータに対するモデルの適用結果, modelにが学習済みモデルが保存される．
 
 
 ### 参考
