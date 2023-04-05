@@ -256,30 +256,30 @@ class CycleGan(tf.keras.models.Model):
         }
 
     def summary(self):
-        self.gen_f.model.summary()
-        self.gen_m.model.summary()
-        self.dis_f.model.summary()
-        self.dis_m.model.summary()
+        self.gen_f.summary()
+        self.gen_m.summary()
+        self.dis_f.summary()
+        self.dis_m.summary()
 
     def save_summary(self, output_dir):
         print("save architecture figure")
         tf.keras.utils.plot_model(
-            self.gen_f.model,
+            self.gen_f,
             show_shapes=True,
             to_file=os.path.join(output_dir, "gen_face.png"),
         )
         tf.keras.utils.plot_model(
-            self.gen_m.model,
+            self.gen_m,
             show_shapes=True,
             to_file=os.path.join(output_dir, "gen_mask.png"),
         )
         tf.keras.utils.plot_model(
-            self.dis_f.model,
+            self.dis_f,
             show_shapes=True,
             to_file=os.path.join(output_dir, "dis_face.png"),
         )
         tf.keras.utils.plot_model(
-            self.dis_m.model,
+            self.dis_m,
             show_shapes=True,
             to_file=os.path.join(output_dir, "dis_mask.png"),
         )
