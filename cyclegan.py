@@ -284,6 +284,9 @@ class CycleGan(tf.keras.models.Model):
             to_file=os.path.join(output_dir, "dis_mask.png"),
         )
 
+    def call(self, inputs, training=False):
+        pass
+
     @staticmethod
     @tf.function
     def ssim_l1_loss(gt, y_pred, max_val=1.0, l1_weight=1.0):

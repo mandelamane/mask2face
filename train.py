@@ -97,7 +97,7 @@ def train_cyclegan(args):
         args.val_input_dir, args.val_target_dir, batch_size, img_size
     )
     test_generator = ImageDataGenerator(
-        args.val_input_dir, args.val_target_dir, batch_size, img_size
+        args.val_input_dir, args.val_target_dir, 1, img_size
     )
 
     kernel_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
@@ -105,8 +105,8 @@ def train_cyclegan(args):
 
     img_size = tuple(args.img_size) + (3,)
 
-    gen_optim = tf.keras.optimizers.legacy.Adam(learning_rate=lr, beta_1=0.5)
-    dis_optim = tf.keras.optimizers.legacy.Adam(learning_rate=lr, beta_1=0.5)
+    gen_optim = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5)
+    dis_optim = tf.keras.optimizers.Adam(learning_rate=lr, beta_1=0.5)
 
     cycle_gan = CycleGan(
         img_size=img_size,
@@ -150,7 +150,7 @@ def train_unet(args):
         args.val_input_dir, args.val_target_dir, batch_size, img_size
     )
     test_generator = ImageDataGenerator(
-        args.val_input_dir, args.val_target_dir, batch_size, img_size
+        args.val_input_dir, args.val_target_dir, 1, img_size
     )
 
     img_size = tuple(args.img_size) + (3,)

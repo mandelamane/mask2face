@@ -36,16 +36,12 @@ class GANMonitor(tf.keras.callbacks.Callback):
         for i in range(self.n_examples):
             mask_img, face_img = self.test_data_generator[i]
 
-            prediction = self.model.gen_f(mask_img[np.newaxis, :, :, :])[
-                0
-            ].numpy()
-            prediction2 = self.model.gen_m(face_img[np.newaxis, :, :, :])[
-                0
-            ].numpy()
+            prediction = self.model.gen_f(mask_img)[0].numpy()
+            prediction2 = self.model.gen_m(face_img)[0].numpy()
             gen_face_img = (prediction * 255.0).astype(np.uint8)
             gen_mask_img = (prediction2 * 255.0).astype(np.uint8)
-            face_img = (face_img * 255.0).astype(np.uint8)
-            mask_img = (mask_img * 255.0).astype(np.uint8)
+            face_img = (face_img[0] * 255.0).astype(np.uint8)
+            mask_img = (mask_img[0] * 255.0).astype(np.uint8)
 
             save_images(ax[i], mask_img, gen_face_img, face_img, gen_mask_img)
 
@@ -66,12 +62,11 @@ class UNetMonitor(tf.keras.callbacks.Callback):
         for i in range(self.n_examples):
             mask_img, face_img = self.test_data_generator[i]
 
-            mask_img = mask_img[np.newaxis, :, :, :]
             gen_face_img = (
                 (self.model(mask_img)[0] * 255.0).numpy().astype("uint8")
             )
             mask_img = (mask_img[0] * 255.0).astype("uint8")
-            face_img = (face_img * 255.0).astype("uint8")
+            face_img = (face_img[0] * 255.0).astype("uint8")
 
             save_images(ax[i], mask_img, gen_face_img, face_img)
 
